@@ -6,25 +6,25 @@ let showConnectorsFlag = true;
 let showLandmarksFlag = true;
 
 function switchView(viewId) {
-    if (cameraInstance) {
-        cameraInstance.stop();
-        cameraInstance = null;
-    }
+    // Kamera sofort stoppen und komplett zerstören beim Verlassen
+    stopCamera();
+
     document.querySelectorAll('.view').forEach(view => {
         view.classList.add('hidden');
     });
     document.getElementById(viewId).classList.remove('hidden');
-
-    // Wenn in Kalibrierung oder Modus 1 gewechselt wird, können wir hier die Kamera steuern
-    if (viewId === 'calibration') {
-        initCameraFeed('webcam-calib', 'output_canvas-calib');
-    } else if (viewId === 'mod-ball') {
-        initCameraFeed('webcam', 'output_canvas');
-    }
 }
 
 function stopCameraAndSwitch(viewId) {
     switchView(viewId);
+}
+
+function stopCamera() {
+    if (cameraInstance) {
+        cameraInstance.stop();
+        cameraInstance = null;
+    }
+    poseInstance = null;
 }
 
 function updateThreshold(val) {
@@ -32,16 +32,17 @@ function updateThreshold(val) {
     document.getElementById('threshold-val').innerText = currentThreshold.toFixed(2);
 }
 
+// Wird NUR durch den Klick auf den Button in der Kalibrierung aufgerufen
 function startCalibrationCamera() {
+    if (cameraInstance) return; // Läuft schon
     initCameraFeed('webcam-calib', 'output_canvas-calib');
 }
 
 function initCameraFeed(videoElementId, canvasElementId) {
-    if (cameraInstance) return; // Verhindert mehrfaches starten
     const videoElement = document.getElementById(videoElementId);
     const canvasElement = document.getElementById(canvasElementId);
     const canvasCtx = canvasElement.getContext('2d');
-    const statusBox = document.getElementById('status-box');
+    const statusBox = document.getElementById('status-box'); 
 
     const connectorsCheckbox = document.getElementById('showConnectors');
     const landmarksCheckbox = document.getElementById('showLandmarks');
@@ -69,14 +70,12 @@ function initCameraFeed(videoElementId, canvasElementId) {
 
         if (results.poseLandmarks) {
             if (showConnectorsFlag) {
-                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
             }
             if (showLandmarksFlag) {
-                drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#FF0000', lineWidth: 2 });
+                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', lineWidth: 2});
             }
 
-
-            // Hier kommt später unsere Schulterblick-Logik rein
             const rightShoulder = results.poseLandmarks[12];
             const leftShoulder = results.poseLandmarks[11];
             const nose = results.poseLandmarks[0];
@@ -85,14 +84,13 @@ function initCameraFeed(videoElementId, canvasElementId) {
 
             if (rightShoulder && leftShoulder) {
                 const midSchulterX = (rightShoulder.x + leftShoulder.x) * 0.5;
-                const threshold = 0.1;
                 const activePoint = nose || rightEar || leftEar;
 
                 if (statusBox) {
                     if (activePoint) {
-                        if (activePoint.x > midSchulterX + threshold) {
+                        if (activePoint.x > midSchulterX + currentThreshold) {
                             statusBox.innerText = "rechts ➡️";
-                        } else if (activePoint.x < midSchulterX - threshold) {
+                        } else if (activePoint.x < midSchulterX - currentThreshold) {
                             statusBox.innerText = "links ⬅️";
                         } else {
                             statusBox.innerText = "Mitte ⏺️";
@@ -106,14 +104,18 @@ function initCameraFeed(videoElementId, canvasElementId) {
         canvasCtx.restore();
     });
 
+    // Die MediaPipe Camera Hilfsfunktion erst hier instanziieren
     cameraInstance = new Camera(videoElement, {
         onFrame: async () => {
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
-            await poseInstance.send({ image: videoElement });
+            if (poseInstance) {
+                await poseInstance.send({image: videoElement});
+            }
         },
         width: 640,
         height: 480
     });
+    
     cameraInstance.start();
 }
