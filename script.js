@@ -1,18 +1,25 @@
-let cameraInstance = null;
+let videoStream = null;
 let poseInstance = null;
+let isRunning = false;
 
 let currentThreshold = 0.10;
 let showConnectorsFlag = true;
 let showLandmarksFlag = true;
 
 function switchView(viewId) {
-    // Kamera sofort stoppen und komplett zerstören beim Verlassen
     stopCamera();
 
     document.querySelectorAll('.view').forEach(view => {
         view.classList.add('hidden');
     });
     document.getElementById(viewId).classList.remove('hidden');
+
+    // Wenn man in Kalibrierung oder Modus 1 geht, direkt starten
+    if (viewId === 'calibration') {
+        initCameraFeed('webcam-calib', 'output_canvas-calib');
+    } else if (viewId === 'mod-ball') {
+        initCameraFeed('webcam', 'output_canvas');
+    }
 }
 
 function stopCameraAndSwitch(viewId) {
@@ -20,9 +27,10 @@ function stopCameraAndSwitch(viewId) {
 }
 
 function stopCamera() {
-    if (cameraInstance) {
-        cameraInstance.stop();
-        cameraInstance = null;
+    isRunning = false;
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
     }
     poseInstance = null;
 }
@@ -32,90 +40,96 @@ function updateThreshold(val) {
     document.getElementById('threshold-val').innerText = currentThreshold.toFixed(2);
 }
 
-// Wird NUR durch den Klick auf den Button in der Kalibrierung aufgerufen
-function startCalibrationCamera() {
-    if (cameraInstance) return; // Läuft schon
-    initCameraFeed('webcam-calib', 'output_canvas-calib');
-}
-
-function initCameraFeed(videoElementId, canvasElementId) {
+async function initCameraFeed(videoElementId, canvasElementId) {
     const videoElement = document.getElementById(videoElementId);
     const canvasElement = document.getElementById(canvasElementId);
     const canvasCtx = canvasElement.getContext('2d');
-    const statusBox = document.getElementById('status-box'); 
+    const statusBox = document.getElementById('status-box');
 
     const connectorsCheckbox = document.getElementById('showConnectors');
     const landmarksCheckbox = document.getElementById('showLandmarks');
 
-    poseInstance = new Pose({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-    });
+    try {
+        // Natives Stream-Handling für iOS Safari
+        videoStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: 640, height: 480 }
+        });
 
-    poseInstance.setOptions({
-        modelComplexity: 1,
-        smoothLandmarks: true,
-        enableSegmentation: false,
-        smoothSegmentation: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-    });
+        videoElement.srcObject = videoStream;
+        await videoElement.play();
 
-    poseInstance.onResults((results) => {
-        if (connectorsCheckbox) showConnectorsFlag = connectorsCheckbox.checked;
-        if (landmarksCheckbox) showLandmarksFlag = landmarksCheckbox.checked;
+        poseInstance = new Pose({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+        });
 
-        canvasCtx.save();
-        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+        poseInstance.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
 
-        if (results.poseLandmarks) {
-            if (showConnectorsFlag) {
-                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
-            }
-            if (showLandmarksFlag) {
-                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', lineWidth: 2});
-            }
+        poseInstance.onResults((results) => {
+            if (connectorsCheckbox) showConnectorsFlag = connectorsCheckbox.checked;
+            if (landmarksCheckbox) showLandmarksFlag = landmarksCheckbox.checked;
 
-            const rightShoulder = results.poseLandmarks[12];
-            const leftShoulder = results.poseLandmarks[11];
-            const nose = results.poseLandmarks[0];
-            const rightEar = results.poseLandmarks[8];
-            const leftEar = results.poseLandmarks[7];
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-            if (rightShoulder && leftShoulder) {
-                const midSchulterX = (rightShoulder.x + leftShoulder.x) * 0.5;
-                const activePoint = nose || rightEar || leftEar;
+            if (results.poseLandmarks) {
+                if (showConnectorsFlag) {
+                    drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+                }
+                if (showLandmarksFlag) {
+                    drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#FF0000', lineWidth: 2 });
+                }
 
-                if (statusBox) {
-                    if (activePoint) {
-                        if (activePoint.x > midSchulterX + currentThreshold) {
-                            statusBox.innerText = "rechts ➡️";
-                        } else if (activePoint.x < midSchulterX - currentThreshold) {
-                            statusBox.innerText = "links ⬅️";
+                const rightShoulder = results.poseLandmarks[12];
+                const leftShoulder = results.poseLandmarks[11];
+                const nose = results.poseLandmarks[0];
+                const rightEar = results.poseLandmarks[8];
+                const leftEar = results.poseLandmarks[7];
+
+                if (rightShoulder && leftShoulder) {
+                    const midSchulterX = (rightShoulder.x + leftShoulder.x) * 0.5;
+                    const activePoint = nose || rightEar || leftEar;
+
+                    if (statusBox) {
+                        if (activePoint) {
+                            if (activePoint.x > midSchulterX + currentThreshold) {
+                                statusBox.innerText = "rechts ➡️";
+                            } else if (activePoint.x < midSchulterX - currentThreshold) {
+                                statusBox.innerText = "links ⬅️";
+                            } else {
+                                statusBox.innerText = "Mitte ⏺️";
+                            }
                         } else {
-                            statusBox.innerText = "Mitte ⏺️";
+                            statusBox.innerText = "Kein Kopf im Bild! ❌";
                         }
-                    } else {
-                        statusBox.innerText = "Kein Kopf im Bild! ❌";
                     }
                 }
             }
-        }
-        canvasCtx.restore();
-    });
+            canvasCtx.restore();
+        });
 
-    // Die MediaPipe Camera Hilfsfunktion erst hier instanziieren
-    cameraInstance = new Camera(videoElement, {
-        onFrame: async () => {
-            canvasElement.width = videoElement.videoWidth;
-            canvasElement.height = videoElement.videoHeight;
-            if (poseInstance) {
-                await poseInstance.send({image: videoElement});
-            }
-        },
-        width: 640,
-        height: 480
-    });
-    
-    cameraInstance.start();
+        isRunning = true;
+        sendFramesToPose(videoElement, canvasElement);
+
+    } catch (err) {
+        console.error("Kamera-Fehler:", err);
+        alert("Kamerazugriff fehlgeschlagen oder verweigert.");
+    }
+}
+
+async function sendFramesToPose(videoElement, canvasElement) {
+    if (!isRunning || !videoStream) return;
+
+    if (videoElement.readyState >= 2 && poseInstance) {
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+        await poseInstance.send({ image: videoElement });
+    }
+
+    requestAnimationFrame(() => sendFramesToPose(videoElement, canvasElement));
 }
