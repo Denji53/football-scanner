@@ -6,7 +6,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Trainer</title>
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 </head>
 
 
@@ -28,6 +35,11 @@
         <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
         <h2>Modus 1: Mit Ball (Rebounder)</h2>
         <!-- Hier kommt später die MediaPipe & Canvas Logik rein -->
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="output_canvas"></canvas>
+        </div>
+        <div id="status-box">Bereit...</div>
     </div>
 
     <!-- MODUS 2: OHNE BALL -->
@@ -38,9 +50,14 @@
 
     <!-- KALIBRIERUNG -->
     <div id="calibration" class="view hidden">
-        <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
+        <button class="back-btn" onclick="stopCameraAndSwitch('main-menu')">⬅️ Menü</button>
         <h2>Kalibrierung</h2>
-        <p>Hier kommen Kamera-Auswahl (Front/Back) und Threshold-Regler hin.</p>
+        <div class="video-container">
+            <video id="webcam-calib" autoplay playsinline></video>
+            <canvas id="output_canvas-calib"></canvas>
+        </div>
+        <p>Prüfe hier dein Bild und den Blickwinkel.</p>
+        <button onclick="startCamera()">Kamera starten</button>
     </div>
 
     <!-- STATISTIKEN -->
