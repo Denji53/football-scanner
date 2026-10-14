@@ -1,7 +1,15 @@
 let cameraInstance = null;
 let poseInstance = null;
 
+let currentThreshold = 0.10;
+let showConnectorsFlag = true;
+let showLandmarksFlag = true;
+
 function switchView(viewId) {
+    if (cameraInstance) {
+        cameraInstance.stop();
+        cameraInstance = null;
+    }
     document.querySelectorAll('.view').forEach(view => {
         view.classList.add('hidden');
     });
@@ -16,18 +24,27 @@ function switchView(viewId) {
 }
 
 function stopCameraAndSwitch(viewId) {
-    if (cameraInstance) {
-        cameraInstance.stop();
-        cameraInstance = null;
-    }
     switchView(viewId);
 }
 
+function updateThreshold(val) {
+    currentThreshold = parseFloat(val);
+    document.getElementById('threshold-val').innerText = currentThreshold.toFixed(2);
+}
+
+function startCalibrationCamera() {
+    initCameraFeed('webcam-calib', 'output_canvas-calib');
+}
+
 function initCameraFeed(videoElementId, canvasElementId) {
+    if (cameraInstance) return; // Verhindert mehrfaches starten
     const videoElement = document.getElementById(videoElementId);
     const canvasElement = document.getElementById(canvasElementId);
     const canvasCtx = canvasElement.getContext('2d');
     const statusBox = document.getElementById('status-box');
+
+    const connectorsCheckbox = document.getElementById('showConnectors');
+    const landmarksCheckbox = document.getElementById('showLandmarks');
 
     poseInstance = new Pose({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
@@ -43,13 +60,21 @@ function initCameraFeed(videoElementId, canvasElementId) {
     });
 
     poseInstance.onResults((results) => {
+        if (connectorsCheckbox) showConnectorsFlag = connectorsCheckbox.checked;
+        if (landmarksCheckbox) showLandmarksFlag = landmarksCheckbox.checked;
+
         canvasCtx.save();
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
         if (results.poseLandmarks) {
-            drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
-            drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#FF0000', lineWidth: 2});
+            if (showConnectorsFlag) {
+                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 2 });
+            }
+            if (showLandmarksFlag) {
+                drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#FF0000', lineWidth: 2 });
+            }
+
 
             // Hier kommt später unsere Schulterblick-Logik rein
             const rightShoulder = results.poseLandmarks[12];
@@ -85,7 +110,7 @@ function initCameraFeed(videoElementId, canvasElementId) {
         onFrame: async () => {
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
-            await poseInstance.send({image: videoElement});
+            await poseInstance.send({ image: videoElement });
         },
         width: 640,
         height: 480
