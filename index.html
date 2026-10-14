@@ -1,1 +1,56 @@
+<!DOCTYPE html>
 
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Trainer</title>
+    <link rel="stylesheet" href="style.css"> 
+</head>
+
+
+<body>
+
+    <!-- HAUPTMENÜ -->
+    <div id="main-menu" class="view">
+        <h1>Football Scan Trainer</h1>
+        <div class="menu-buttons">
+            <button onclick="switchView('mod-ball')">Modus 1: Mit Ball</button>
+            <button onclick="switchView('mod-noball')">Modus 2: Ohne Ball</button>
+            <button onclick="switchView('calibration')">Kalibrierung & Setup</button>
+            <button onclick="switchView('stats')">Statistiken</button>
+        </div>
+    </div>
+
+    <!-- MODUS 1: MIT BALL -->
+    <div id="mod-ball" class="view hidden">
+        <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
+        <h2>Modus 1: Mit Ball (Rebounder)</h2>
+        <!-- Hier kommt später die MediaPipe & Canvas Logik rein -->
+    </div>
+
+    <!-- MODUS 2: OHNE BALL -->
+    <div id="mod-noball" class="view hidden">
+        <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
+        <h2>Modus 2: Ohne Ball (Kognitiv)</h2>
+    </div>
+
+    <!-- KALIBRIERUNG -->
+    <div id="calibration" class="view hidden">
+        <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
+        <h2>Kalibrierung</h2>
+        <p>Hier kommen Kamera-Auswahl (Front/Back) und Threshold-Regler hin.</p>
+    </div>
+
+    <!-- STATISTIKEN -->
+    <div id="stats" class="view hidden">
+        <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
+        <h2>Statistiken</h2>
+        <p>Gespeicherte Session-Daten aus dem localStorage.</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
