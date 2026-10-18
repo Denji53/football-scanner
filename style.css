@@ -19,6 +19,10 @@ body {
     align-items: center;
     padding: 20px;
     box-sizing: border-box;
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
 }
 
 .hidden {
@@ -34,7 +38,7 @@ body {
 }
 
 button {
-    padding: 15px;
+    padding: 14px;
     font-size: 16px;
     font-weight: bold;
     border: none;
@@ -42,6 +46,7 @@ button {
     background-color: #1f8ef1;
     color: white;
     cursor: pointer;
+    transition: background 0.2s;
 }
 
 button:active {
@@ -55,27 +60,39 @@ button:active {
     padding: 8px 12px;
     font-size: 14px;
     background-color: #333;
+    z-index: 10;
 }
 
 .video-container {
     position: relative;
     width: 100%;
-    max-width: 400px;
-    height: 300px;
+    max-width: 360px;
+    height: 270px;
     background: #000;
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
-video,
-canvas {
+video, canvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.status-box {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    text-align: center;
+    min-width: 260px;
+    transition: background-color 0.2s;
 }
 
 .controls-panel {
@@ -109,14 +126,4 @@ canvas {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-}
-
-.status-box {
-    font-size: 16px;
-    font-weight: bold;
-    padding: 8px 16px;
-    background: rgba(0,0,0,0.7);
-    border-radius: 6px;
-    margin-bottom: 10px;
-    text-align: center;
 }
