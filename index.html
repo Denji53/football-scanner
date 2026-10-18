@@ -1,87 +1,81 @@
 <!DOCTYPE html>
-
 <html lang="de">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Trainer</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <title>Football Scan Trainer</title>
+    <link rel="stylesheet" href="style.css?v=3">
 
+    <!-- MediaPipe Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
-        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
-    <script src="script.js?v=2" defer></script>
 </head>
-
-
 <body>
 
     <!-- HAUPTMENÜ -->
     <div id="main-menu" class="view">
         <h1>Football Scan Trainer</h1>
         <div class="menu-buttons">
-            <button onclick="switchView('mod-ball')">Modus 1: Mit Ball</button>
-            <button onclick="switchView('mod-noball')">Modus 2: Ohne Ball</button>
-            <button onclick="switchView('calibration')">Kalibrierung & Setup</button>
+            <button onclick="switchView('mod-ball')">Modus 1: Mit Ball (Rebounder)</button>
+            <button onclick="switchView('mod-noball')">Modus 2: Kognitiv (Signale)</button>
+            <button onclick="switchView('calibration')">Kalibrierung & Kamera</button>
             <button onclick="switchView('stats')">Statistiken</button>
         </div>
     </div>
 
     <!-- MODUS 1: MIT BALL -->
     <div id="mod-ball" class="view hidden">
-        <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
-        <h2>Modus 1: Mit Ball (Rebounder)</h2>
-        <!-- Hier kommt später die MediaPipe & Canvas Logik rein -->
+        <button class="back-btn" onclick="stopCameraAndSwitch('main-menu')">⬅️ Menü</button>
+        <h2>Modus 1: Mit Ball</h2>
         <div class="video-container">
-            <video id="webcam" autoplay playsinline></video>
+            <video id="webcam" playsinline></video>
             <canvas id="output_canvas"></canvas>
         </div>
-        <div id="status-box">Bereit...</div>
+        <div id="status-box" class="status-box">Rücken zum Gerät drehen...</div>
     </div>
 
-    <!-- MODUS 2: OHNE BALL -->
+    <!-- MODUS 2: OHNE BALL (Kognitiv) -->
     <div id="mod-noball" class="view hidden">
-        <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
-        <h2>Modus 2: Ohne Ball (Kognitiv)</h2>
-    </div>
-
-    <!-- KALIBRIERUNG / KAMERA-TEST -->
-<div id="calibration" class="view hidden">
-    <button class="back-btn" onclick="stopCameraAndSwitch('main-menu')">⬅️ Menü</button>
-    <h2>Kalibrierung & Kamera</h2>
-    <div class="video-container">
-        <video id="webcam-calib" playsinline></video>
-        <canvas id="output_canvas-calib"></canvas>
-    </div>
-    <!-- Status-Box auch in der Kalibrierung für Sofort-Feedback -->
-    <div id="status-box-calib" class="status-box">Bereit...</div>
-    
-    <div class="controls-panel">
-        <div class="control-group">
-            <label for="thresholdRange">Threshold (Empfindlichkeit): <span id="threshold-val">0.10</span></label>
-            <input type="range" id="thresholdRange" min="0.02" max="0.25" step="0.01" value="0.10" oninput="updateThreshold(this.value)">
+        <button class="back-btn" onclick="stopCameraAndSwitch('main-menu')">⬅️ Menü</button>
+        <h2>Modus 2: Kognitiver Scan</h2>
+        <div class="video-container">
+            <video id="webcam-noball" playsinline></video>
+            <canvas id="output_canvas-noball"></canvas>
         </div>
+        <div id="cognitive-display" class="status-box">Rücken zum Gerät drehen...</div>
+    </div>
 
-        <div class="control-group checkbox-group">
-            <label><input type="checkbox" id="showConnectors" checked> Skelett (Connectors) anzeigen</label>
-            <label><input type="checkbox" id="showLandmarks" checked> Punkte (Landmarks) anzeigen</label>
+    <!-- KALIBRIERUNG -->
+    <div id="calibration" class="view hidden">
+        <button class="back-btn" onclick="stopCameraAndSwitch('main-menu')">⬅️ Menü</button>
+        <h2>Kalibrierung & Kamera</h2>
+        <div class="video-container">
+            <video id="webcam-calib" playsinline></video>
+            <canvas id="output_canvas-calib"></canvas>
+        </div>
+        <div id="status-box-calib" class="status-box">Gesicht im Bild testen</div>
+        
+        <div class="controls-panel">
+            <div class="control-group">
+                <label for="thresholdRange">Threshold (Empfindlichkeit): <span id="threshold-val">0.10</span></label>
+                <input type="range" id="thresholdRange" min="0.02" max="0.25" step="0.01" value="0.10" oninput="updateThreshold(this.value)">
+            </div>
+
+            <div class="control-group checkbox-group">
+                <label><input type="checkbox" id="showConnectors" checked> Skelett anzeigen</label>
+                <label><input type="checkbox" id="showLandmarks" checked> Punkte anzeigen</label>
+            </div>
         </div>
     </div>
-</div>
-
 
     <!-- STATISTIKEN -->
     <div id="stats" class="view hidden">
         <button class="back-btn" onclick="switchView('main-menu')">⬅️ Menü</button>
         <h2>Statistiken</h2>
-        <p>Gespeicherte Session-Daten aus dem localStorage.</p>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=3" defer></script>
 </body>
-
 </html>
