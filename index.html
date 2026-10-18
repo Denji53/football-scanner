@@ -49,27 +49,30 @@
         <h2>Modus 2: Ohne Ball (Kognitiv)</h2>
     </div>
 
-    <!-- KALIBRIERUNG -->
-    <div id="calibration" class="view hidden">
-        <button class="back-btn" onclick="stopCameraAndSwitch('main-menu')">⬅️ Menü</button>
-        <h2>Kalibrierung</h2>
-        <div class="video-container">
-            <video id="webcam-calib" playsinline></video>
-            <canvas id="output_canvas-calib"></canvas>
+    <!-- KALIBRIERUNG / KAMERA-TEST -->
+<div id="calibration" class="view hidden">
+    <button class="back-btn" onclick="stopCameraAndSwitch('main-menu')">⬅️ Menü</button>
+    <h2>Kalibrierung & Kamera</h2>
+    <div class="video-container">
+        <video id="webcam-calib" playsinline></video>
+        <canvas id="output_canvas-calib"></canvas>
+    </div>
+    <!-- Status-Box auch in der Kalibrierung für Sofort-Feedback -->
+    <div id="status-box-calib" class="status-box">Bereit...</div>
+    
+    <div class="controls-panel">
+        <div class="control-group">
+            <label for="thresholdRange">Threshold (Empfindlichkeit): <span id="threshold-val">0.10</span></label>
+            <input type="range" id="thresholdRange" min="0.02" max="0.25" step="0.01" value="0.10" oninput="updateThreshold(this.value)">
         </div>
-        <div class="controls-panel">
-            <div class="control-group">
-                <label for="thresholdRange">Threshold (Empfindlichkeit): <span id="threshold-val">0.10</span></label>
-                <input type="range" id="thresholdRange" min="0.02" max="0.25" step="0.01" value="0.10"
-                    oninput="updateThreshold(this.value)">
-            </div>
 
-            <div class="control-group checkbox-group">
-                <label><input type="checkbox" id="showConnectors" checked> Skelett (Connectors) anzeigen</label>
-                <label><input type="checkbox" id="showLandmarks" checked> Punkte (Landmarks) anzeigen</label>
-            </div>
+        <div class="control-group checkbox-group">
+            <label><input type="checkbox" id="showConnectors" checked> Skelett (Connectors) anzeigen</label>
+            <label><input type="checkbox" id="showLandmarks" checked> Punkte (Landmarks) anzeigen</label>
         </div>
     </div>
+</div>
+
 
     <!-- STATISTIKEN -->
     <div id="stats" class="view hidden">
